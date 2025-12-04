@@ -61,8 +61,6 @@ long run2() throws IOException {
     }).sum();
 }
 
-record Range(long low, long high) {}
-
 Stream<Range> parse() throws IOException {
     return Arrays.stream(Files.readString(Path.of("day02")).split(","))
             .map(x -> new Range(Long.parseLong(x.split("-")[0]), Long.parseLong(x.split("-")[1])));
@@ -84,3 +82,5 @@ long divisor(int digits) {
     }
     return n;
 }
+
+record Range(long low, long high) {}

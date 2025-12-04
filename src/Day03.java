@@ -12,7 +12,6 @@ private static long run(int digits) throws IOException {
     for (var bank : Files.readAllLines(Path.of("day03"))) {
         var batteries = bank.toCharArray();
 
-        // pre-fill with the first N indexes
         var largest = new int[digits];
         fillSequential(largest, 0, 0);
 
@@ -25,13 +24,7 @@ private static long run(int digits) throws IOException {
             }
         }
 
-        // build number from character string
-        var num = 0L;
-        for (var i = 0; i < digits; i++) {
-            num *= 10;
-            num += batteries[largest[i]] - '0';
-        }
-        sum += num;
+        sum += strToLong(batteries, largest);
     }
     return sum;
 }
@@ -41,4 +34,13 @@ private static void fillSequential(int[] array, int startIdx, int value) {
     for (var i = 1; i < array.length - startIdx; i++) {
         array[startIdx + i] = value + i;
     }
+}
+
+private static long strToLong(char[] batteries, int[] largest) {
+    var num = 0L;
+    for (var i = 0; i < largest.length; i++) {
+        num *= 10;
+        num += batteries[largest[i]] - '0';
+    }
+    return num;
 }
