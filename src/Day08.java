@@ -6,42 +6,38 @@ void main() throws IOException {
 }
 
 long run1() throws IOException {
-    var circuits = new LinkedList<Set<Coord>>();
-    var coordToCircuit = new HashMap<Coord, Set<Coord>>();
-    var distances = new ArrayList<Distance>();
-    setup(circuits, coordToCircuit, distances);
-
-    // combine circuits
+    var setup = setup();
     for (var i = 0; i < 1000; i++) {
-        combineCircuits(circuits, coordToCircuit, distances.get(i));
+        combineCircuits(setup.circuits, setup.coordToCircuit, setup.distances.get(i));
     }
-    circuits.sort((o1, o2) -> Integer.compare(o2.size(), o1.size()));
-    return (long) circuits.get(0).size() * circuits.get(1).size() * circuits.get(2).size();
+    setup.circuits.sort((o1, o2) -> Integer.compare(o2.size(), o1.size()));
+    return (long) setup.circuits.get(0).size() * setup.circuits.get(1).size() * setup.circuits.get(2).size();
 }
 
 long run2() throws IOException {
-    var circuits = new LinkedList<Set<Coord>>();
-    var coordToCircuit = new HashMap<Coord, Set<Coord>>();
-    var distances = new ArrayList<Distance>();
-    setup(circuits, coordToCircuit, distances);
-
+    var setup = setup();
     Distance lastDistance = null;
-    for (var distance : distances) {
-        if (combineCircuits(circuits, coordToCircuit, distance)) {
+    for (var distance : setup.distances) {
+        var oldCircuits = setup.circuits.size();
+        combineCircuits(setup.circuits, setup.coordToCircuit, distance);
+        if (setup.circuits.size() != oldCircuits) {
             lastDistance = distance;
         }
     }
     return (long) lastDistance.coord1.x * lastDistance.coord2.x;
 }
 
-private static void setup(List<Set<Coord>> circuits, Map<Coord, Set<Coord>> coordToCircuit, List<Distance> distances)
-        throws IOException {
+private static SetupResult setup() throws IOException {
+    var circuits = new LinkedList<Set<Coord>>();
+    var coordToCircuit = new HashMap<Coord, Set<Coord>>();
+    var distances = new ArrayList<Distance>();
+
     var coords = Files.readAllLines(Path.of("day08")).stream()
             .map(x -> Arrays.stream(x.split(",")).mapToInt(Integer::parseInt).toArray())
             .map(x -> new Coord(x[0], x[1], x[2]))
             .toList();
 
-    // add individual circuits
+    // map each coordinate to a circuit
     for (var coord : coords) {
         var circuit = new HashSet<Coord>();
         circuit.add(coord);
@@ -49,7 +45,7 @@ private static void setup(List<Set<Coord>> circuits, Map<Coord, Set<Coord>> coor
         coordToCircuit.put(coord, circuit);
     }
 
-    // find the 1000 pairs of coordinates with the smallest distance
+    // compute the distance between all pairs
     for (var i = 0; i < coords.size(); i++) {
         for (var j = i + 1; j < coords.size(); j++) {
             var c1 = coords.get(i);
@@ -60,23 +56,25 @@ private static void setup(List<Set<Coord>> circuits, Map<Coord, Set<Coord>> coor
             distances.add(new Distance(c1, c2, distance));
         }
     }
+
+    // sort by the smallest to largest
     distances.sort(Comparator.comparingDouble((Distance o) -> o.distance));
+
+    return new SetupResult(circuits, coordToCircuit, distances);
 }
 
-private static boolean combineCircuits(List<Set<Coord>> circuits, Map<Coord, Set<Coord>> coordToCircuit, Distance distance) {
+private static void combineCircuits(List<Set<Coord>> circuits, Map<Coord, Set<Coord>> coordToCircuit, Distance distance) {
     var circuit1 = coordToCircuit.get(distance.coord1);
     var circuit2 = coordToCircuit.get(distance.coord2);
-
-    // combine
     if (circuit1 != circuit2) {
-        circuits.remove(circuit1); // Java caches the hash code value so we have to remove, add new elements, then add back
+        // remove circuit2 and add all items to circuit 1
         circuits.remove(circuit2);
         circuit1.addAll(circuit2);
-        circuits.add(circuit1);
         circuit2.forEach(x -> coordToCircuit.put(x, circuit1)); // update all
-        return true;
     }
-    return false;
+}
+
+private record SetupResult(LinkedList<Set<Coord>> circuits, HashMap<Coord, Set<Coord>> coordToCircuit, ArrayList<Distance> distances) {
 }
 
 record Coord(int x, int y, int z) {}
